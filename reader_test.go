@@ -214,22 +214,18 @@ func TestNewReader3(t *testing.T) {
 
 	fmt.Println(tk)
 
-	buffer:=Uint16ToBytes(tk)
-	//tk = binary.BigEndian.Uint16(buffer) // 大端
-	binary.BigEndian.Uint16(buffer)
-	//tk = binary.LittleEndian.Uint16(buffer) // 小端
-	fmt.Println(tk)
-
-	var msg Message1020
-	restruct.Unpack(buffer, binary.BigEndian, &msg)
-	fmt.Println("msg:",msg)
-	// 或者这样取
-	r := NewReader(buffer)
+	data:=Uint16ToBytes(tk)
+	//xx:=binary.BigEndian.Uint16(data)
+	//fmt.Println("xx:",xx)
+	r := NewReader(data)
 	tk_h:=r.Uint16(5)
 	tk_m:=r.Uint16(6)
 	tk_s:=r.Uint16(1)
 	fmt.Printf("tk_h:%v,tk_m:%v,tk_s:%v\n",tk_h,tk_m,tk_s)
-	//r.Skip(6)                // 6-bits are reserved
+
+	var msg Message1020
+	restruct.Unpack(data, binary.BigEndian, &msg)
+	fmt.Println("msg:",msg)
 }
 func Uint16ToBytes(n uint16) []byte {
 	return []byte{
