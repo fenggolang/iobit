@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/go-restruct/restruct"
+	"github.com/imroc/biu"
 )
 
 func testReads(t *testing.T, op ReadTestOp) {
@@ -210,14 +211,14 @@ func TestNewReader2(t *testing.T) {
 }
 
 func TestNewReader3(t *testing.T) {
-	tk:= uint16(1152)
-
-	fmt.Println(tk)
-
+	tk:= uint16(1596)
+	fmt.Println("原始十进制数据:",tk)
+	fmt.Println("十进制转二进制:",biu.ToBinaryString(tk))
 	data:=Uint16ToBytes(tk)
-	//xx:=binary.BigEndian.Uint16(data)
-	//fmt.Println("xx:",xx)
+	fmt.Println("十进制转字节数组:",data)
+
 	r := NewReader(data)
+	r.Skip(4)
 	tk_h:=r.Uint16(5)
 	tk_m:=r.Uint16(6)
 	tk_s:=r.Uint16(1)
@@ -227,13 +228,59 @@ func TestNewReader3(t *testing.T) {
 	restruct.Unpack(data, binary.BigEndian, &msg)
 	fmt.Println("msg:",msg)
 }
+
+func TestNewReader4(t *testing.T) {
+	tk:= uint32(68104497)
+	fmt.Println("原始十进制数据:",tk)
+	fmt.Println("十进制转二进制:",biu.ToBinaryString(tk))
+	data:=Uint32ToBytes(tk)
+	fmt.Println("十进制转字节数组:",data)
+	r := NewReader(data)
+
+	r.Skip(5) // 跳过二进制最前面的5位
+	//tmp:=r.Uint32(5)
+	//tmp:=11
+	flag:=r.Uint32(1) // 这一位的值，1表示负数，0表示正数
+	x:=r.Uint32(26)
+	fmt.Printf("tmp:%v,flag:%v,x:%v\n","tmp",flag,x)
+
+	var gx GLONASSX
+	restruct.Unpack(data,binary.BigEndian,&gx)
+	fmt.Println("gx:",gx)
+
+	var n int = 100
+	var un uint = uint(n)
+	fmt.Printf("n:%v\t,un:%v\n",n,un)
+
+	var um uint32  = 100
+	var m int32 = -1*int32(um)
+	m = -1*int32(um)
+	fmt.Printf("m:%v\t,um:%v\n",m,um)
+
+}
+// 这个是uint8，也就是byte数组
 func Uint16ToBytes(n uint16) []byte {
 	return []byte{
-		byte(n),
 		byte(n >> 8),
+		byte(n),
 	}
 }
+func Uint32ToBytes(n uint32) []byte {
+	r := make([]byte, 4)
+	for i := uint32(0); i < 4; i++ {
+		r[i] = byte((n >> (8 * i)) & 0xff)
+	}
+	k := make([]byte, 4)
+	k[0], k[1], k[2], k[3] = r[3], r[2], r[1], r[0]
 
+	return k
+}
+
+type GLONASSX struct {
+	Tmp uint32 `struct:"uint32:5"`
+	Flag uint32 `struct:"uint32:1"` // X坐标的正负,0为正(+)，1为负(-)
+	X uint32 `struct:"uint32:26"`
+}
 type Message1020 struct {
 	/**
 	tk ---> DF107 是以当天 GLONASS 子帧的起点为零点的时间。（最高有效 5 位）MSB 5位 为小时数（整数），之后的 6 位为分钟数（整数），最低有效位（LSB）为30 秒的采样间隔数。
